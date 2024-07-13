@@ -158,19 +158,7 @@ namespace ArgumentGenerator
             }
             else if (syntax.Type is NullableTypeSyntax)
             {
-                if (((NullableTypeSyntax)syntax.Type).ElementType is IdentifierNameSyntax)
-                {
-                    var name = ((IdentifierNameSyntax)((NullableTypeSyntax)syntax.Type).ElementType).Identifier.Text;
-                    switch (name)
-                    {
-                        case "DateTime":
-                            result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName("DateTime.Today"));
-                            break;
-                        default:
-                            result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(count++)));
-                            break;
-                    }
-                }
+                result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName("null"));
             }
 
             return result;
