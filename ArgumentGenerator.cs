@@ -86,7 +86,7 @@ namespace ArgumentGenerator
             {
                 var list = SyntaxFactory.SeparatedList<ArgumentSyntax>(
                 (memberDeclaration as MethodDeclarationSyntax).ParameterList.Parameters.
-                    Select(x => GenerateArgument(x, count++))
+                    Select(x => GenerateArgument(x, ref count))
                 );
 
                 document = document.WithSyntaxRoot(root.ReplaceNode(node, node.WithArguments(list)));
@@ -95,7 +95,7 @@ namespace ArgumentGenerator
             {
                 var list = SyntaxFactory.SeparatedList<ArgumentSyntax>(
                 (memberDeclaration as ConstructorDeclarationSyntax).ParameterList.Parameters.
-                    Select(x => GenerateArgument(x, count++))
+                    Select(x => GenerateArgument(x, ref count))
                 );
 
                 document = document.WithSyntaxRoot(root.ReplaceNode(node, node.WithArguments(list)));
@@ -104,7 +104,7 @@ namespace ArgumentGenerator
             return document;
         }
 
-        private ArgumentSyntax GenerateArgument(ParameterSyntax syntax, int count)
+        private ArgumentSyntax GenerateArgument(ParameterSyntax syntax, ref int count)
         {
             ArgumentSyntax result = null;
 
