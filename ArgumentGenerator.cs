@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.Package;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -53,26 +54,40 @@ namespace ArgumentGenerator
                     syntaxTrees.AddRange(compilation.SyntaxTrees);
                 }
 
+                var list = new List<CodeAction>();
+
                 foreach (var method in syntaxTrees.SelectMany(x => x.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()).
-                    Where(y => y.Identifier.Text == name))
+                    Where(y => y.Identifier.Text == name && y.ParameterList.Parameters.Any()))
                 {
-                    context.RegisterCodeFix(
-                            CodeAction.Create(
+                    list.Add(CodeAction.Create(
                                 title: "Preencher argumentos",
-                                createChangedDocument: c => PopulateArguments(context.Document, method, node, c),
-                                equivalenceKey: method.Identifier.Text)
-                            ,diagnostic);
+                                createChangedDocument: c => PopulateArguments(context.Document, method, node, c)));
                 }
 
-                foreach (var constructor in syntaxTrees.SelectMany(x => x.GetRoot().DescendantNodes().OfType<ConstructorDeclarationSyntax>()).
-                    Where(y => y.Identifier.Text == name))
+                if (list.Any())
                 {
                     context.RegisterCodeFix(
                             CodeAction.Create(
+                                "Preencher argumentos", list.ToImmutableArray(), true)
+                            , diagnostic);
+                }
+
+                list.Clear();
+
+                foreach (var constructor in syntaxTrees.SelectMany(x => x.GetRoot().DescendantNodes().OfType<ConstructorDeclarationSyntax>()).
+                    Where(y => y.Identifier.Text == name && y.ParameterList.Parameters.Any()))
+                {
+                    list.Add(CodeAction.Create(
                                 title: "Preencher argumentos",
-                                createChangedDocument: c => PopulateArguments(context.Document, constructor, node, c),
-                                equivalenceKey: constructor.Identifier.Text)
-                            ,diagnostic);
+                                createChangedDocument: c => PopulateArguments(context.Document, constructor, node, c)));
+                }
+
+                if (list.Any())
+                {
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            "Preencher argumentos", list.ToImmutableArray(), true)
+                        , diagnostic);
                 }
             }
         }
@@ -133,6 +148,22 @@ namespace ArgumentGenerator
                     default:
                         result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(count++)));
                         break;
+                }
+            }
+            else if (syntax.Type is NullableTypeSyntax)
+            {
+                if (((NullableTypeSyntax)syntax.Type).ElementType is IdentifierNameSyntax)
+                {
+                    var name = ((IdentifierNameSyntax)((NullableTypeSyntax)syntax.Type).ElementType).Identifier.Text;
+                    switch (name)
+                    {
+                        case "DateTime":
+                            result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName("DateTime.Today"));
+                            break;
+                        default:
+                            result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(count++)));
+                            break;
+                    }
                 }
             }
 
