@@ -34,60 +34,66 @@ namespace ArgumentGenerator
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            if (context.Diagnostics.First().Properties.TryGetValue("name", out string name))
+            var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+
+            // TODO: Replace the following code with your own analysis, generating a CodeAction for each fix to suggest
+            var diagnostic = context.Diagnostics.First();
+            var diagnosticSpan = diagnostic.Location.SourceSpan;
+
+            // Find the type declaration identified by the diagnostic.
+            var node = root.FindNode(diagnosticSpan) as ArgumentListSyntax;
+
+            if (node.Parent is ObjectCreationExpressionSyntax)
             {
-                var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-
-                // TODO: Replace the following code with your own analysis, generating a CodeAction for each fix to suggest
-                var diagnostic = context.Diagnostics.First();
-                var diagnosticSpan = diagnostic.Location.SourceSpan;
-
-                // Find the type declaration identified by the diagnostic.
-                var node = root.FindNode(diagnosticSpan) as ArgumentListSyntax;
-                var workspace = MSBuildWorkspace.Create();
-                var solution = await workspace.OpenSolutionAsync(context.Document.Project.Solution.FilePath);
-                var syntaxTrees = new List<SyntaxTree>();
-
-                foreach (var project in solution.Projects)
+                if ((node.Parent as ObjectCreationExpressionSyntax).Type is IdentifierNameSyntax)
                 {
-                    var compilation = await project.GetCompilationAsync();
-                    syntaxTrees.AddRange(compilation.SyntaxTrees);
-                }
+                    var nodeType = (node.Parent as ObjectCreationExpressionSyntax).Type;
+                    var name = (nodeType as IdentifierNameSyntax).Identifier.Text;
+                    var workspace = MSBuildWorkspace.Create();
+                    var solution = await workspace.OpenSolutionAsync(context.Document.Project.Solution.FilePath);
+                    var syntaxTrees = new List<SyntaxTree>();
 
-                var list = new List<CodeAction>();
+                    foreach (var project in solution.Projects)
+                    {
+                        var compilation = await project.GetCompilationAsync();
+                        syntaxTrees.AddRange(compilation.SyntaxTrees);
+                    }
 
-                foreach (var method in syntaxTrees.SelectMany(x => x.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()).
-                    Where(y => y.Identifier.Text == name && y.ParameterList.Parameters.Any()))
-                {
-                    list.Add(CodeAction.Create(
-                                title: "Preencher argumentos",
-                                createChangedDocument: c => PopulateArguments(context.Document, method, node, c)));
-                }
+                    var list = new List<CodeAction>();
 
-                if (list.Any())
-                {
-                    context.RegisterCodeFix(
+                    foreach (var method in syntaxTrees.SelectMany(x => x.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()).
+                        Where(y => y.Identifier.Text == name && y.ParameterList.Parameters.Any()))
+                    {
+                        list.Add(CodeAction.Create(
+                                    title: "Preencher argumentos",
+                                    createChangedDocument: c => PopulateArguments(context.Document, method, node, c)));
+                    }
+
+                    if (list.Any())
+                    {
+                        context.RegisterCodeFix(
+                                CodeAction.Create(
+                                    "Preencher argumentos", list.ToImmutableArray(), true)
+                                , diagnostic);
+                    }
+
+                    list.Clear();
+
+                    foreach (var constructor in syntaxTrees.SelectMany(x => x.GetRoot().DescendantNodes().OfType<ConstructorDeclarationSyntax>()).
+                        Where(y => y.Identifier.Text == name && y.ParameterList.Parameters.Any()))
+                    {
+                        list.Add(CodeAction.Create(
+                                    title: "Preencher argumentos",
+                                    createChangedDocument: c => PopulateArguments(context.Document, constructor, node, c)));
+                    }
+
+                    if (list.Any())
+                    {
+                        context.RegisterCodeFix(
                             CodeAction.Create(
                                 "Preencher argumentos", list.ToImmutableArray(), true)
                             , diagnostic);
-                }
-
-                list.Clear();
-
-                foreach (var constructor in syntaxTrees.SelectMany(x => x.GetRoot().DescendantNodes().OfType<ConstructorDeclarationSyntax>()).
-                    Where(y => y.Identifier.Text == name && y.ParameterList.Parameters.Any()))
-                {
-                    list.Add(CodeAction.Create(
-                                title: "Preencher argumentos",
-                                createChangedDocument: c => PopulateArguments(context.Document, constructor, node, c)));
-                }
-
-                if (list.Any())
-                {
-                    context.RegisterCodeFix(
-                        CodeAction.Create(
-                            "Preencher argumentos", list.ToImmutableArray(), true)
-                        , diagnostic);
+                    }
                 }
             }
         }

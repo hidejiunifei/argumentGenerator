@@ -37,20 +37,14 @@ namespace ArgumentGenerator
                 if (context.Node.Parent is ObjectCreationExpressionSyntax &&
                     (context.Node.Parent as ObjectCreationExpressionSyntax).Type is IdentifierNameSyntax)
                 {
-                    var diagnostic = Diagnostic.Create(Rule, localDeclaration.GetLocation(), 
-                        new Dictionary<string, string>() { { "name", 
-                            ((IdentifierNameSyntax)((ObjectCreationExpressionSyntax)context.Node.Parent).Type).Identifier.Text } }
-                        .ToImmutableDictionary());
+                    var diagnostic = Diagnostic.Create(Rule, localDeclaration.GetLocation());
 
                     context.ReportDiagnostic(diagnostic);
                 }
                 else if (context.Node.Parent is InvocationExpressionSyntax &&
                     (context.Node.Parent as InvocationExpressionSyntax).Expression is IdentifierNameSyntax)
                 {
-                    var diagnostic = Diagnostic.Create(Rule, localDeclaration.GetLocation(),
-                        new Dictionary<string, string>() { { "name",
-                            ((IdentifierNameSyntax)((InvocationExpressionSyntax)context.Node.Parent).Expression).Identifier.Text } }
-                        .ToImmutableDictionary());
+                    var diagnostic = Diagnostic.Create(Rule, localDeclaration.GetLocation());
 
                     context.ReportDiagnostic(diagnostic);
                 }
