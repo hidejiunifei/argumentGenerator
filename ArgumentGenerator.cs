@@ -43,57 +43,55 @@ namespace ArgumentGenerator
             // Find the type declaration identified by the diagnostic.
             var node = root.FindNode(diagnosticSpan) as ArgumentListSyntax;
 
-            if (node.Parent is ObjectCreationExpressionSyntax)
+            if (node.Parent is ObjectCreationExpressionSyntax objectCreationExpressionSyntax &&
+                objectCreationExpressionSyntax.Type is IdentifierNameSyntax identifierNameSyntax)
             {
-                if ((node.Parent as ObjectCreationExpressionSyntax).Type is IdentifierNameSyntax)
+                var nodeType = objectCreationExpressionSyntax.Type;
+                var name = identifierNameSyntax.Identifier.Text;
+                var workspace = MSBuildWorkspace.Create();
+                var solution = await workspace.OpenSolutionAsync(context.Document.Project.Solution.FilePath);
+                var syntaxTrees = new List<SyntaxTree>();
+
+                foreach (var project in solution.Projects)
                 {
-                    var nodeType = (node.Parent as ObjectCreationExpressionSyntax).Type;
-                    var name = (nodeType as IdentifierNameSyntax).Identifier.Text;
-                    var workspace = MSBuildWorkspace.Create();
-                    var solution = await workspace.OpenSolutionAsync(context.Document.Project.Solution.FilePath);
-                    var syntaxTrees = new List<SyntaxTree>();
+                    var compilation = await project.GetCompilationAsync();
+                    syntaxTrees.AddRange(compilation.SyntaxTrees);
+                }
 
-                    foreach (var project in solution.Projects)
-                    {
-                        var compilation = await project.GetCompilationAsync();
-                        syntaxTrees.AddRange(compilation.SyntaxTrees);
-                    }
+                var list = new List<CodeAction>();
 
-                    var list = new List<CodeAction>();
+                foreach (var method in syntaxTrees.SelectMany(x => x.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()).
+                    Where(y => y.Identifier.Text == name && y.ParameterList.Parameters.Any()))
+                {
+                    list.Add(CodeAction.Create(
+                                title: "Preencher argumentos",
+                                createChangedDocument: c => PopulateArguments(context.Document, method, node, c)));
+                }
 
-                    foreach (var method in syntaxTrees.SelectMany(x => x.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()).
-                        Where(y => y.Identifier.Text == name && y.ParameterList.Parameters.Any()))
-                    {
-                        list.Add(CodeAction.Create(
-                                    title: "Preencher argumentos",
-                                    createChangedDocument: c => PopulateArguments(context.Document, method, node, c)));
-                    }
-
-                    if (list.Any())
-                    {
-                        context.RegisterCodeFix(
-                                CodeAction.Create(
-                                    "Preencher argumentos", list.ToImmutableArray(), true)
-                                , diagnostic);
-                    }
-
-                    list.Clear();
-
-                    foreach (var constructor in syntaxTrees.SelectMany(x => x.GetRoot().DescendantNodes().OfType<ConstructorDeclarationSyntax>()).
-                        Where(y => y.Identifier.Text == name && y.ParameterList.Parameters.Any()))
-                    {
-                        list.Add(CodeAction.Create(
-                                    title: "Preencher argumentos",
-                                    createChangedDocument: c => PopulateArguments(context.Document, constructor, node, c)));
-                    }
-
-                    if (list.Any())
-                    {
-                        context.RegisterCodeFix(
+                if (list.Any())
+                {
+                    context.RegisterCodeFix(
                             CodeAction.Create(
                                 "Preencher argumentos", list.ToImmutableArray(), true)
                             , diagnostic);
-                    }
+                }
+
+                list.Clear();
+
+                foreach (var constructor in syntaxTrees.SelectMany(x => x.GetRoot().DescendantNodes().OfType<ConstructorDeclarationSyntax>()).
+                    Where(y => y.Identifier.Text == name && y.ParameterList.Parameters.Any()))
+                {
+                    list.Add(CodeAction.Create(
+                                title: "Preencher argumentos",
+                                createChangedDocument: c => PopulateArguments(context.Document, constructor, node, c)));
+                }
+
+                if (list.Any())
+                {
+                    context.RegisterCodeFix(
+                        CodeAction.Create(
+                            "Preencher argumentos", list.ToImmutableArray(), true)
+                        , diagnostic);
                 }
             }
         }
@@ -103,19 +101,19 @@ namespace ArgumentGenerator
             var root = await document.GetSyntaxRootAsync();
             int count = 1;
 
-            if (memberDeclaration is MethodDeclarationSyntax)
+            if (memberDeclaration is MethodDeclarationSyntax methodDeclarationSyntax)
             {
                 var list = SyntaxFactory.SeparatedList<ArgumentSyntax>(
-                (memberDeclaration as MethodDeclarationSyntax).ParameterList.Parameters.
+                methodDeclarationSyntax.ParameterList.Parameters.
                     Select(x => GenerateArgument(x, ref count)).Where(y => y != null)
                 );
 
                 document = document.WithSyntaxRoot(root.ReplaceNode(node, node.WithArguments(list)));
             }
-            else if (memberDeclaration is ConstructorDeclarationSyntax)
+            else if (memberDeclaration is ConstructorDeclarationSyntax constructorDeclarationSyntax)
             {
                 var list = SyntaxFactory.SeparatedList<ArgumentSyntax>(
-                (memberDeclaration as ConstructorDeclarationSyntax).ParameterList.Parameters.
+                constructorDeclarationSyntax.ParameterList.Parameters.
                     Select(x => GenerateArgument(x, ref count)).Where(y => y != null)
                 );
 
@@ -129,9 +127,9 @@ namespace ArgumentGenerator
         {
             ArgumentSyntax result = null;
 
-            if (syntax.Type is PredefinedTypeSyntax)
+            if (syntax.Type is PredefinedTypeSyntax predefinedTypeSyntax)
             {
-                var name = ((PredefinedTypeSyntax)syntax.Type).Keyword.Text;
+                var name = predefinedTypeSyntax.Keyword.Text;
                 switch (name)
                 {
                     case "string":
@@ -143,11 +141,11 @@ namespace ArgumentGenerator
                         break;
                 }
             }
-            else if (syntax.Type is IdentifierNameSyntax)
+            else if (syntax.Type is IdentifierNameSyntax identifierNameSyntax)
             {
                 if (syntax.Default == null)
                 {
-                    var name = ((IdentifierNameSyntax)syntax.Type).Identifier.Text;
+                    var name = identifierNameSyntax.Identifier.Text;
                     switch (name)
                     {
                         case "Guid":

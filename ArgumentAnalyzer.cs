@@ -34,15 +34,7 @@ namespace ArgumentGenerator
 
             if (!localDeclaration.Arguments.Any())
             {
-                if (context.Node.Parent is ObjectCreationExpressionSyntax &&
-                    (context.Node.Parent as ObjectCreationExpressionSyntax).Type is IdentifierNameSyntax)
-                {
-                    var diagnostic = Diagnostic.Create(Rule, localDeclaration.GetLocation());
-
-                    context.ReportDiagnostic(diagnostic);
-                }
-                else if (context.Node.Parent is InvocationExpressionSyntax &&
-                    (context.Node.Parent as InvocationExpressionSyntax).Expression is IdentifierNameSyntax)
+                if (context.Node.Parent is ObjectCreationExpressionSyntax || context.Node.Parent is InvocationExpressionSyntax)
                 {
                     var diagnostic = Diagnostic.Create(Rule, localDeclaration.GetLocation());
 
