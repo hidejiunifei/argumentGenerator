@@ -107,7 +107,7 @@ namespace ArgumentGenerator
             {
                 var list = SyntaxFactory.SeparatedList<ArgumentSyntax>(
                 (memberDeclaration as MethodDeclarationSyntax).ParameterList.Parameters.
-                    Select(x => GenerateArgument(x, ref count))
+                    Select(x => GenerateArgument(x, ref count)).Where(y => y != null)
                 );
 
                 document = document.WithSyntaxRoot(root.ReplaceNode(node, node.WithArguments(list)));
@@ -116,7 +116,7 @@ namespace ArgumentGenerator
             {
                 var list = SyntaxFactory.SeparatedList<ArgumentSyntax>(
                 (memberDeclaration as ConstructorDeclarationSyntax).ParameterList.Parameters.
-                    Select(x => GenerateArgument(x, ref count))
+                    Select(x => GenerateArgument(x, ref count)).Where(y => y != null)
                 );
 
                 document = document.WithSyntaxRoot(root.ReplaceNode(node, node.WithArguments(list)));
@@ -145,15 +145,21 @@ namespace ArgumentGenerator
             }
             else if (syntax.Type is IdentifierNameSyntax)
             {
-                var name = ((IdentifierNameSyntax)syntax.Type).Identifier.Text;
-                switch (name)
+                if (syntax.Default == null)
                 {
-                    case "DateTime":
-                        result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName("DateTime.Today"));
-                        break;
-                    default:
-                        result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(count++)));
-                        break;
+                    var name = ((IdentifierNameSyntax)syntax.Type).Identifier.Text;
+                    switch (name)
+                    {
+                        case "Guid":
+                            result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName("Guid.Empty"));
+                            break;
+                        case "DateTime":
+                            result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName("DateTime.Today"));
+                            break;
+                        default:
+                            result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(count++)));
+                            break;
+                    }
                 }
             }
             else if (syntax.Type is NullableTypeSyntax)
