@@ -129,16 +129,31 @@ namespace ArgumentGenerator
 
             if (syntax.Type is PredefinedTypeSyntax predefinedTypeSyntax)
             {
-                var name = predefinedTypeSyntax.Keyword.Text;
-                switch (name)
+                if (syntax.Default == null)
                 {
-                    case "string":
-                    case "String":
-                        result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(syntax.Identifier.Text)));
-                        break;
-                    default:
-                        result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(count++)));
-                        break;
+                    var name = predefinedTypeSyntax.Keyword.Text;
+                    switch (name)
+                    {
+                        case "string":
+                        case "String":
+                            result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(syntax.Identifier.Text)));
+                            break;
+                        case "byte":
+                        case "short":
+                        case "int":
+                        case "Int16":
+                        case "Int32":
+                        case "Int64":
+                        case "double":
+                        case "Double":
+                        case "decimal":
+                        case "Decimal":
+                            result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(count++)));
+                            break;
+                        default:
+                            result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName(name));
+                            break;
+                    }
                 }
             }
             else if (syntax.Type is IdentifierNameSyntax identifierNameSyntax)
@@ -155,14 +170,17 @@ namespace ArgumentGenerator
                             result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName("DateTime.Today"));
                             break;
                         default:
-                            result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(count++)));
+                            result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName(name));
                             break;
                     }
                 }
             }
             else if (syntax.Type is NullableTypeSyntax)
             {
-                result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName("null"));
+                if (syntax.Default == null)
+                {
+                    result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName("null"));
+                }
             }
 
             return result;
