@@ -3,7 +3,7 @@
 	<Metadata>
 		<Identity Id="ArgumentGenerator.3dabc65b-cd25-4d11-a236-2b6f3d72752d" Version="1.0" Language="en-US" Publisher="Hideji Hayakawa - SYSMAP" />
 		<DisplayName>ArgumentGenerator</DisplayName>
-		<Description xml:space="preserve">Empty VSIX Project.</Description>
+		<Description xml:space="preserve">Argument generator</Description>
 	</Metadata>
 	<Installation>
 		<InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 18.0)">
