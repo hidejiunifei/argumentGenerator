@@ -32,8 +32,7 @@ namespace ArgumentGenerator
         {
             return WellKnownFixAllProviders.BatchFixer;
         }
-
-        private string GetQualifiedName(QualifiedNameSyntax nameSyntax) 
+        private string GetQualifiedName(QualifiedNameSyntax nameSyntax)
         {
             var list = new List<string>();
             var aux = nameSyntax;
