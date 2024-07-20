@@ -4,17 +4,11 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
-using Microsoft.CodeAnalysis.Rename;
-using Microsoft.CodeAnalysis.Text;
-using Microsoft.VisualStudio.Package;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
-using System.Net.Mime;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,6 +35,11 @@ namespace ArgumentGenerator
                 list.Add(aux.Right.Identifier.Text);
                 if (aux.Left is QualifiedNameSyntax qualified)
                     aux = qualified;
+                else if (aux.Left is IdentifierNameSyntax identifierNameSyntax)
+                {
+                    list.Add(identifierNameSyntax.Identifier.Text);
+                    break;
+                }
                 else
                     break;
             }
@@ -61,7 +60,15 @@ namespace ArgumentGenerator
             var node = root.FindNode(diagnosticSpan) as ArgumentListSyntax;
             var usings = root.DescendantNodes().OfType<UsingDirectiveSyntax>().
                 Where(x => x.Name is QualifiedNameSyntax).
-                Select(y => GetQualifiedName(y.Name as QualifiedNameSyntax));
+                Select(y => GetQualifiedName(y.Name as QualifiedNameSyntax)).ToList();
+
+            usings.AddRange(
+            root.DescendantNodes().OfType<UsingDirectiveSyntax>().
+                Where(x => x.Name is IdentifierNameSyntax).
+                Select(y => (y.Name as IdentifierNameSyntax).Identifier.Text));
+
+            if (node.FirstAncestorOrSelf<NamespaceDeclarationSyntax>().Name is IdentifierNameSyntax identifierNameSyntax6)
+                usings.Add(identifierNameSyntax6.Identifier.Text);
 
             string name = null;
             string methodName = null;
@@ -128,6 +135,10 @@ namespace ArgumentGenerator
                         x.GetCompilationUnitRoot().Members.First() is NamespaceDeclarationSyntax namespaceDeclarationSyntax &&
                         namespaceDeclarationSyntax.Name is QualifiedNameSyntax qualifiedNameSyntax &&
                         usings.Contains(GetQualifiedName(qualifiedNameSyntax))));
+                    syntaxTrees.AddRange(compilation.SyntaxTrees.Where(x => x.GetCompilationUnitRoot().Members.Any() &&
+                        x.GetCompilationUnitRoot().Members.First() is NamespaceDeclarationSyntax namespaceDeclarationSyntax1 &&
+                        namespaceDeclarationSyntax1.Name is IdentifierNameSyntax identifierNameSyntax4 &&
+                        usings.Contains(identifierNameSyntax4.Identifier.Text)));
                 }
 
                 var list = new List<CodeAction>();
