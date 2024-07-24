@@ -238,6 +238,12 @@ namespace ArgumentGenerator
                         case "Double":
                         case "decimal":
                         case "Decimal":
+                        case "long":
+                        case "float":
+                        case "ulong":
+                        case "UInt16":
+                        case "UInt32":
+                        case "UInt64":
                             result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(count++)));
                             break;
                         default:
