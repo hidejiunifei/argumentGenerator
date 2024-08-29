@@ -225,25 +225,16 @@ namespace ArgumentGenerator
                     switch (name)
                     {
                         case "string":
-                        case "String":
                             result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(syntax.Identifier.Text)));
                             break;
                         case "byte":
                         case "short":
                         case "int":
-                        case "Int16":
-                        case "Int32":
-                        case "Int64":
                         case "double":
-                        case "Double":
                         case "decimal":
-                        case "Decimal":
                         case "long":
                         case "float":
                         case "ulong":
-                        case "UInt16":
-                        case "UInt32":
-                        case "UInt64":
                             result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(count++)));
                             break;
                         default:
@@ -264,6 +255,19 @@ namespace ArgumentGenerator
                             break;
                         case "DateTime":
                             result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName("DateTime.Today"));
+                            break;
+                        case "Int16":
+                        case "Int32":
+                        case "Int64":
+                        case "Decimal":
+                        case "Double":
+                        case "UInt16":
+                        case "UInt32":
+                        case "UInt64":
+                            result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(count++)));
+                            break;
+                        case "String":
+                            result = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(syntax.Identifier.Text)));
                             break;
                         default:
                             result = SyntaxFactory.Argument(SyntaxFactory.IdentifierName(name));
