@@ -79,6 +79,14 @@ namespace ArgumentGenerator
                 isConstructor = true;
             }
 
+            if (node.Parent is ObjectCreationExpressionSyntax objectCreationExpressionSyntax2 &&
+                objectCreationExpressionSyntax2.Type is QualifiedNameSyntax qualifiedNameSyntax1 &&
+                qualifiedNameSyntax1.Right is IdentifierNameSyntax identifierNameSyntax7)
+            {
+                name = identifierNameSyntax7.Identifier.Text;
+                isConstructor = true;
+            }
+
             if (
                 node.Parent is ImplicitObjectCreationExpressionSyntax implicitObjectCreationExpressionSyntax &&
                 implicitObjectCreationExpressionSyntax.Parent.Parent is VariableDeclaratorSyntax variableDeclaratorSyntax &&
